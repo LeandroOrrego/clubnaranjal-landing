@@ -85,6 +85,21 @@
     font-style:italic;
     margin-bottom:2rem;
   }
+  .auspiciado-box{
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    margin-bottom:.75rem;
+  }
+  .auspiciado-logo{
+    height:32px;
+    width:auto;
+    max-width:100px;
+    object-fit:contain;
+    border-radius:4px;
+    background:#fff;
+    padding:2px 6px;
+  }
   .galeria{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
@@ -150,7 +165,7 @@
  
     const { data: noticia, error } = await supabaseClient
       .from("noticias")
-      .select("titulo, subtitulo, cuerpo, auspiciado_por, imagenes, fecha_publicacion")
+      .select("titulo, subtitulo, cuerpo, auspiciado_por, auspiciado_por_logo_url, imagenes, fecha_publicacion")
       .eq("slug", slug)
       .eq("publicado", true)
       .single();
@@ -171,7 +186,12 @@
     document.title = noticia.titulo + " - Club Naranjal";
  
     contenedor.innerHTML = `
-      <p class="noticia-cat">${noticia.auspiciado_por ? "Auspiciado por " + noticia.auspiciado_por : "Club Naranjal"}</p>
+      ${noticia.auspiciado_por ? `
+        <div class="auspiciado-box">
+          ${noticia.auspiciado_por_logo_url ? `<img class="auspiciado-logo" src="${noticia.auspiciado_por_logo_url}" alt="${noticia.auspiciado_por}">` : ""}
+          <p class="noticia-cat" style="margin-bottom:0">Auspiciado por ${noticia.auspiciado_por}</p>
+        </div>
+      ` : `<p class="noticia-cat">Club Naranjal</p>`}
       <h1>${noticia.titulo}</h1>
       ${noticia.subtitulo ? `<p class="subtitulo">${noticia.subtitulo}</p>` : ""}
       <p class="fecha">${fecha}</p>
@@ -184,8 +204,12 @@
       ` : ""}
     `;
  
-    // Suma 1 vista. No bloquea la carga de la noticia si falla (ej. sin conexión momentánea).
-    supabaseClient.rpc("increment_vistas", { noticia_slug: slug }).catch(() => {});
+    // Suma 1 vista. Si falla (ej. sin conexión), no interrumpe la carga de la noticia.
+    try {
+      await supabaseClient.rpc("increment_vistas", { noticia_slug: slug });
+    } catch (e) {
+      console.warn("No se pudo registrar la vista:", e);
+    }
   }
  
   cargarNoticia();
