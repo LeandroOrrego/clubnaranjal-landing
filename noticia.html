@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club Naranjal - Noticia</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;600;700&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --naranja:#e85d00;
+    --verde:#1a6b2f;
+    --negro:#0f0f0f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--negro);
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+  }
+  .container{max-width:800px;margin:0 auto;padding:0 1.5rem}
+  header{
+    background:#000;
+    padding:1.5rem 0;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  header .container{display:flex;align-items:center;gap:.75rem}
+  header img{height:40px}
+  header .club-nombre{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    color:var(--naranja);
+    font-size:1.1rem;
+    letter-spacing:.03em;
+  }
+  .volver{
+    display:inline-block;
+    margin:2rem 0 1rem;
+    color:var(--naranja);
+    text-decoration:none;
+    font-size:.9rem;
+    font-weight:600;
+  }
+  .volver:hover{text-decoration:underline}
+  .noticia-cat{
+    font-size:.7rem;
+    font-weight:700;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--naranja);
+    margin-bottom:.75rem;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-size:2rem;
+    font-weight:600;
+    line-height:1.25;
+    margin-bottom:.75rem;
+  }
+  .subtitulo{
+    font-size:1.1rem;
+    color:rgba(255,255,255,.7);
+    margin-bottom:1rem;
+  }
+  .fecha{
+    font-size:.85rem;
+    color:rgba(255,255,255,.4);
+    margin-bottom:2rem;
+  }
+  .imagen-principal{
+    width:100%;
+    border-radius:6px;
+    margin-bottom:2rem;
+    display:block;
+  }
+  .cuerpo{
+    font-size:1.05rem;
+    color:rgba(255,255,255,.9);
+    white-space:pre-wrap;
+    margin-bottom:2rem;
+  }
+  .auspiciado{
+    font-size:.85rem;
+    color:rgba(255,255,255,.5);
+    font-style:italic;
+    margin-bottom:2rem;
+  }
+  .galeria{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:1rem;
+    margin-bottom:3rem;
+  }
+  .galeria img{
+    width:100%;
+    height:200px;
+    object-fit:cover;
+    border-radius:6px;
+  }
+  .estado-msg{
+    text-align:center;
+    padding:4rem 1rem;
+    color:rgba(255,255,255,.5);
+  }
+  footer{
+    text-align:center;
+    padding:2rem;
+    color:rgba(255,255,255,.3);
+    font-size:.8rem;
+    border-top:1px solid rgba(255,255,255,.08);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <span class="club-nombre">CLUB NARANJAL</span>
+  </div>
+</header>
+
+<div class="container">
+  <a class="volver" href="index.html#noticias">&larr; Volver a Noticias</a>
+  <div id="noticia-contenido">
+    <p class="estado-msg">Cargando noticia...</p>
+  </div>
+</div>
+
+<footer>Club Deportivo Naranjal</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://zdpyeqmyyaenrdrlyahq.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkcHllcW15eWFlbnJkcmx5YWhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNDk1MjMsImV4cCI6MjA4NDcyNTUyM30.CCk6e4p-_2xSgZIRYKaI7r8k_IdRoxnFrvS8lhrSRBI"; // copiá la misma clave que ya usás en tu archivo principal
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function getSlugFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("slug");
+  }
+
+  async function cargarNoticia() {
+    const contenedor = document.getElementById("noticia-contenido");
+    const slug = getSlugFromUrl();
+
+    if (!slug) {
+      contenedor.innerHTML = '<p class="estado-msg">No se especificó ninguna noticia.</p>';
+      return;
+    }
+
+    const { data: noticia, error } = await supabaseClient
+      .from("noticias")
+      .select("titulo, subtitulo, cuerpo, auspiciado_por, imagenes, fecha_publicacion")
+      .eq("slug", slug)
+      .eq("publicado", true)
+      .single();
+
+    if (error || !noticia) {
+      contenedor.innerHTML = '<p class="estado-msg">Noticia no encontrada.</p>';
+      return;
+    }
+
+    const fecha = new Date(noticia.fecha_publicacion).toLocaleDateString("es-PY", {
+      day: "numeric", month: "long", year: "numeric"
+    });
+
+    const imagenes = noticia.imagenes || [];
+    const portada = imagenes.length > 0 ? imagenes[0] : null;
+    const galeria = imagenes.slice(1);
+
+    document.title = noticia.titulo + " - Club Naranjal";
+
+    contenedor.innerHTML = `
+      <p class="noticia-cat">${noticia.auspiciado_por ? "Auspiciado por " + noticia.auspiciado_por : "Club Naranjal"}</p>
+      <h1>${noticia.titulo}</h1>
+      ${noticia.subtitulo ? `<p class="subtitulo">${noticia.subtitulo}</p>` : ""}
+      <p class="fecha">${fecha}</p>
+      ${portada ? `<img class="imagen-principal" src="${portada}" alt="${noticia.titulo}">` : ""}
+      <div class="cuerpo">${noticia.cuerpo}</div>
+      ${galeria.length > 0 ? `
+        <div class="galeria">
+          ${galeria.map(url => `<img src="${url}" alt="Foto de ${noticia.titulo}">`).join("")}
+        </div>
+      ` : ""}
+    `;
+  }
+
+  cargarNoticia();
+</script>
+
+</body>
+</html>
