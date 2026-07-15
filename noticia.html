@@ -112,64 +112,64 @@
 </style>
 </head>
 <body>
-
+ 
 <header>
   <div class="container">
     <span class="club-nombre">CLUB NARANJAL</span>
   </div>
 </header>
-
+ 
 <div class="container">
   <a class="volver" href="index.html#noticias">&larr; Volver a Noticias</a>
   <div id="noticia-contenido">
     <p class="estado-msg">Cargando noticia...</p>
   </div>
 </div>
-
+ 
 <footer>Club Deportivo Naranjal</footer>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = "https://zdpyeqmyyaenrdrlyahq.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkcHllcW15eWFlbnJkcmx5YWhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNDk1MjMsImV4cCI6MjA4NDcyNTUyM30.CCk6e4p-_2xSgZIRYKaI7r8k_IdRoxnFrvS8lhrSRBI"; // copiá la misma clave que ya usás en tu archivo principal
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+ 
   function getSlugFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get("slug");
   }
-
+ 
   async function cargarNoticia() {
     const contenedor = document.getElementById("noticia-contenido");
     const slug = getSlugFromUrl();
-
+ 
     if (!slug) {
       contenedor.innerHTML = '<p class="estado-msg">No se especificó ninguna noticia.</p>';
       return;
     }
-
+ 
     const { data: noticia, error } = await supabaseClient
       .from("noticias")
       .select("titulo, subtitulo, cuerpo, auspiciado_por, imagenes, fecha_publicacion")
       .eq("slug", slug)
       .eq("publicado", true)
       .single();
-
+ 
     if (error || !noticia) {
       contenedor.innerHTML = '<p class="estado-msg">Noticia no encontrada.</p>';
       return;
     }
-
+ 
     const fecha = new Date(noticia.fecha_publicacion).toLocaleDateString("es-PY", {
       day: "numeric", month: "long", year: "numeric"
     });
-
+ 
     const imagenes = noticia.imagenes || [];
     const portada = imagenes.length > 0 ? imagenes[0] : null;
     const galeria = imagenes.slice(1);
-
+ 
     document.title = noticia.titulo + " - Club Naranjal";
-
+ 
     contenedor.innerHTML = `
       <p class="noticia-cat">${noticia.auspiciado_por ? "Auspiciado por " + noticia.auspiciado_por : "Club Naranjal"}</p>
       <h1>${noticia.titulo}</h1>
@@ -183,10 +183,13 @@
         </div>
       ` : ""}
     `;
+ 
+    // Suma 1 vista. No bloquea la carga de la noticia si falla (ej. sin conexión momentánea).
+    supabaseClient.rpc("increment_vistas", { noticia_slug: slug }).catch(() => {});
   }
-
+ 
   cargarNoticia();
 </script>
-
+ 
 </body>
 </html>
